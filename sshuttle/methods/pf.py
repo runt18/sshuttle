@@ -170,7 +170,7 @@ class FreeBsd(Generic):
 
     def add_rules(self, includes, port, dnsport, nslist):
         tables = [
-            b'table <forward_subnets> {%s}' % b','.join(includes)
+            b'table <forward_subnets> {{{0!s}}}'.format(b','.join(includes))
         ]
         translating_rules = [
             b'rdr pass on lo0 proto tcp '
@@ -183,8 +183,8 @@ class FreeBsd(Generic):
 
         if len(nslist) > 0:
             tables.append(
-                b'table <dns_servers> {%s}' %
-                b','.join([ns[1].encode("ASCII") for ns in nslist]))
+                b'table <dns_servers> {{{0!s}}}'.format(
+                b','.join([ns[1].encode("ASCII") for ns in nslist])))
             translating_rules.append(
                 b'rdr pass on lo0 proto udp to '
                 b'<dns_servers> port 53 -> 127.0.0.1 port %r' % dnsport)
@@ -234,7 +234,7 @@ class OpenBsd(Generic):
 
     def add_rules(self, includes, port, dnsport, nslist):
         tables = [
-            b'table <forward_subnets> {%s}' % b','.join(includes)
+            b'table <forward_subnets> {{{0!s}}}'.format(b','.join(includes))
         ]
         translating_rules = [
             b'pass in on lo0 inet proto tcp '
@@ -247,8 +247,8 @@ class OpenBsd(Generic):
 
         if len(nslist) > 0:
             tables.append(
-                b'table <dns_servers> {%s}' %
-                b','.join([ns[1].encode("ASCII") for ns in nslist]))
+                b'table <dns_servers> {{{0!s}}}'.format(
+                b','.join([ns[1].encode("ASCII") for ns in nslist])))
             translating_rules.append(
                 b'pass in on lo0 inet proto udp to <dns_servers>'
                 b'port 53 rdr-to 127.0.0.1 port %r' % dnsport)
@@ -297,7 +297,7 @@ class Darwin(FreeBsd):
 
     def disable(self):
         if _pf_context['Xtoken'] is not None:
-            pfctl('-X %s' % _pf_context['Xtoken'].decode("ASCII"))
+            pfctl('-X {0!s}'.format(_pf_context['Xtoken'].decode("ASCII")))
 
     def add_anchors(self):
         # before adding anchors and rules we must override the skip lo
@@ -324,14 +324,14 @@ else:
 
 def pfctl(args, stdin=None):
     argv = ['pfctl'] + list(args.split(" "))
-    debug1('>> %s\n' % ' '.join(argv))
+    debug1('>> {0!s}\n'.format(' '.join(argv)))
 
     p = ssubprocess.Popen(argv, stdin=ssubprocess.PIPE,
                           stdout=ssubprocess.PIPE,
                           stderr=ssubprocess.PIPE)
     o = p.communicate(stdin)
     if p.returncode:
-        raise Fatal('%r returned %d' % (argv, p.returncode))
+        raise Fatal('{0!r} returned {1:d}'.format(argv, p.returncode))
 
     return o
 
@@ -356,7 +356,7 @@ class Method(BaseMethod):
         argv = (sock.family, socket.IPPROTO_TCP,
                 peer[0].encode("ASCII"), peer[1],
                 proxy[0].encode("ASCII"), proxy[1])
-        out_line = b"QUERY_PF_NAT %d,%d,%s,%d,%s,%d\n" % argv
+        out_line = b"QUERY_PF_NAT {0:d},{1:d},{2!s},{3:d},{4!s},{5:d}\n".format(*argv)
         pfile.write(out_line)
         pfile.flush()
         in_line = pfile.readline()
@@ -374,8 +374,7 @@ class Method(BaseMethod):
 
         if family != socket.AF_INET:
             raise Exception(
-                'Address family "%s" unsupported by pf method_name'
-                % family_to_string(family))
+                'Address family "{0!s}" unsupported by pf method_name'.format(family_to_string(family)))
         if udp:
             raise Exception("UDP not supported by pf method_name")
 
@@ -386,8 +385,7 @@ class Method(BaseMethod):
             # definition
             for f, swidth, sexclude, snet in sorted(
                     subnets, key=lambda s: (s[1], s[2]), reverse=True):
-                includes.append(b"%s%s/%d" %
-                                (b"!" if sexclude else b"",
+                includes.append(b"{0!s}{1!s}/{2:d}".format(b"!" if sexclude else b"",
                                     snet.encode("ASCII"),
                                     swidth))
 
@@ -398,8 +396,7 @@ class Method(BaseMethod):
     def restore_firewall(self, port, family, udp):
         if family != socket.AF_INET:
             raise Exception(
-                'Address family "%s" unsupported by pf method_name'
-                % family_to_string(family))
+                'Address family "{0!s}" unsupported by pf method_name'.format(family_to_string(family)))
         if udp:
             raise Exception("UDP not supported by pf method_name")
 
@@ -410,9 +407,9 @@ class Method(BaseMethod):
         if line.startswith('QUERY_PF_NAT '):
             try:
                 dst = pf.query_nat(*(line[13:].split(',')))
-                sys.stdout.write('QUERY_PF_NAT_SUCCESS %s,%r\n' % dst)
+                sys.stdout.write('QUERY_PF_NAT_SUCCESS {0!s},{1!r}\n'.format(*dst))
             except IOError as e:
-                sys.stdout.write('QUERY_PF_NAT_FAILURE %s\n' % e)
+                sys.stdout.write('QUERY_PF_NAT_FAILURE {0!s}\n'.format(e))
 
             sys.stdout.flush()
             return True

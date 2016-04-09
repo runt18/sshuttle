@@ -93,7 +93,7 @@ def test_firewall_command_darwin(mock_pf_get_dev, mock_ioctl, mock_stdout):
     method = get_method('pf')
     assert not method.firewall_command("somthing")
 
-    command = "QUERY_PF_NAT %d,%d,%s,%d,%s,%d\n" % (
+    command = "QUERY_PF_NAT {0:d},{1:d},{2!s},{3:d},{4!s},{5:d}\n".format(
         socket.AF_INET, socket.IPPROTO_TCP,
         "127.0.0.1", 1025, "127.0.0.2", 1024)
     assert method.firewall_command(command)
@@ -116,7 +116,7 @@ def test_firewall_command_freebsd(mock_pf_get_dev, mock_ioctl, mock_stdout):
     method = get_method('pf')
     assert not method.firewall_command("somthing")
 
-    command = "QUERY_PF_NAT %d,%d,%s,%d,%s,%d\n" % (
+    command = "QUERY_PF_NAT {0:d},{1:d},{2!s},{3:d},{4!s},{5:d}\n".format(
         socket.AF_INET, socket.IPPROTO_TCP,
         "127.0.0.1", 1025, "127.0.0.2", 1024)
     assert method.firewall_command(command)
@@ -139,7 +139,7 @@ def test_firewall_command_openbsd(mock_pf_get_dev, mock_ioctl, mock_stdout):
     method = get_method('pf')
     assert not method.firewall_command("somthing")
 
-    command = "QUERY_PF_NAT %d,%d,%s,%d,%s,%d\n" % (
+    command = "QUERY_PF_NAT {0:d},{1:d},{2!s},{3:d},{4!s},{5:d}\n".format(
         socket.AF_INET, socket.IPPROTO_TCP,
         "127.0.0.1", 1025, "127.0.0.2", 1024)
     assert method.firewall_command(command)

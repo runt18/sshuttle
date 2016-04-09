@@ -14,7 +14,7 @@ from sshuttle.helpers import family_ip_tuple, log, Fatal
 def parse_subnet4(s):
     m = re.match(r'(\d+)(?:\.(\d+)\.(\d+)\.(\d+))?(?:/(\d+))?$', s)
     if not m:
-        raise Fatal('%r is not a valid IP subnet format' % s)
+        raise Fatal('{0!r} is not a valid IP subnet format'.format(s))
     (a, b, c, d, width) = m.groups()
     (a, b, c, d) = (int(a or 0), int(b or 0), int(c or 0), int(d or 0))
     if width is None:
@@ -22,24 +22,24 @@ def parse_subnet4(s):
     else:
         width = int(width)
     if a > 255 or b > 255 or c > 255 or d > 255:
-        raise Fatal('%d.%d.%d.%d has numbers > 255' % (a, b, c, d))
+        raise Fatal('{0:d}.{1:d}.{2:d}.{3:d} has numbers > 255'.format(a, b, c, d))
     if width > 32:
-        raise Fatal('*/%d is greater than the maximum of 32' % width)
-    return(socket.AF_INET, '%d.%d.%d.%d' % (a, b, c, d), width)
+        raise Fatal('*/{0:d} is greater than the maximum of 32'.format(width))
+    return(socket.AF_INET, '{0:d}.{1:d}.{2:d}.{3:d}'.format(a, b, c, d), width)
 
 
 # 1:2::3/64 or just 1:2::3
 def parse_subnet6(s):
     m = re.match(r'(?:([a-fA-F\d:]+))?(?:/(\d+))?$', s)
     if not m:
-        raise Fatal('%r is not a valid IP subnet format' % s)
+        raise Fatal('{0!r} is not a valid IP subnet format'.format(s))
     (net, width) = m.groups()
     if width is None:
         width = 128
     else:
         width = int(width)
     if width > 128:
-        raise Fatal('*/%d is greater than the maximum of 128' % width)
+        raise Fatal('*/{0:d} is greater than the maximum of 128'.format(width))
     return(socket.AF_INET6, net, width)
 
 
@@ -48,7 +48,7 @@ def parse_subnet_file(s):
     try:
         handle = open(s, 'r')
     except OSError:
-        raise Fatal('Unable to open subnet file: %s' % s)
+        raise Fatal('Unable to open subnet file: {0!s}'.format(s))
 
     raw_config_lines = handle.readlines()
     config_lines = []
@@ -82,17 +82,17 @@ def parse_ipport4(s):
     s = str(s)
     m = re.match(r'(?:(\d+)\.(\d+)\.(\d+)\.(\d+))?(?::)?(?:(\d+))?$', s)
     if not m:
-        raise Fatal('%r is not a valid IP:port format' % s)
+        raise Fatal('{0!r} is not a valid IP:port format'.format(s))
     (a, b, c, d, port) = m.groups()
     (a, b, c, d, port) = (int(a or 0), int(b or 0), int(c or 0), int(d or 0),
                           int(port or 0))
     if a > 255 or b > 255 or c > 255 or d > 255:
-        raise Fatal('%d.%d.%d.%d has numbers > 255' % (a, b, c, d))
+        raise Fatal('{0:d}.{1:d}.{2:d}.{3:d} has numbers > 255'.format(a, b, c, d))
     if port > 65535:
-        raise Fatal('*:%d is greater than the maximum of 65535' % port)
+        raise Fatal('*:{0:d} is greater than the maximum of 65535'.format(port))
     if a is None:
         a = b = c = d = 0
-    return ('%d.%d.%d.%d' % (a, b, c, d), port)
+    return ('{0:d}.{1:d}.{2:d}.{3:d}'.format(a, b, c, d), port)
 
 
 # [1:2::3]:456 or [1:2::3] or 456
@@ -100,7 +100,7 @@ def parse_ipport6(s):
     s = str(s)
     m = re.match(r'(?:\[([^]]*)])?(?::)?(?:(\d+))?$', s)
     if not m:
-        raise Fatal('%s is not a valid IP:port format' % s)
+        raise Fatal('{0!s} is not a valid IP:port format'.format(s))
     (ip, port) = m.groups()
     (ip, port) = (ip or '::', int(port or 0))
     return (ip, port)
@@ -193,7 +193,7 @@ def main():
             elif opt.method in ["auto", "nat", "tproxy", "pf"]:
                 method_name = opt.method
             else:
-                o.fatal("method_name %s not supported" % opt.method)
+                o.fatal("method_name {0!s} not supported".format(opt.method))
             if opt.listen:
                 ipport_v6 = None
                 ipport_v4 = None
@@ -228,11 +228,11 @@ def main():
             if return_code == 0:
                 log('Normal exit code, exiting...')
             else:
-                log('Abnormal exit code detected, failing...' % return_code)
+                log('Abnormal exit code detected, failing...'.format(*return_code))
             return return_code
 
     except Fatal as e:
-        log('fatal: %s\n' % e)
+        log('fatal: {0!s}\n'.format(e))
         return 99
     except KeyboardInterrupt:
         log('\n')

@@ -79,7 +79,7 @@ def _nb_clean(func, *args):
         if e.errno not in (errno.EWOULDBLOCK, errno.EAGAIN):
             raise
         else:
-            debug3('%s: err was: %s\n' % (func.__name__, e))
+            debug3('{0!s}: err was: {1!s}\n'.format(func.__name__, e))
             return None
 
 
@@ -87,7 +87,7 @@ def _try_peername(sock):
     try:
         pn = sock.getpeername()
         if pn:
-            return '%s:%s' % (pn[0], pn[1])
+            return '{0!s}:{1!s}'.format(pn[0], pn[1])
     except socket.error as e:
         if e.args[0] not in (errno.ENOTCONN, errno.ENOTSOCK):
             raise
@@ -102,7 +102,7 @@ class SockWrapper:
     def __init__(self, rsock, wsock, connect_to=None, peername=None):
         global _swcount
         _swcount += 1
-        debug3('creating new SockWrapper (%d now exist)\n' % _swcount)
+        debug3('creating new SockWrapper ({0:d} now exist)\n'.format(_swcount))
         self.exc = None
         self.rsock = rsock
         self.wsock = wsock
@@ -115,16 +115,16 @@ class SockWrapper:
     def __del__(self):
         global _swcount
         _swcount -= 1
-        debug1('%r: deleting (%d remain)\n' % (self, _swcount))
+        debug1('{0!r}: deleting ({1:d} remain)\n'.format(self, _swcount))
         if self.exc:
-            debug1('%r: error was: %s\n' % (self, self.exc))
+            debug1('{0!r}: error was: {1!s}\n'.format(self, self.exc))
 
     def __repr__(self):
         if self.rsock == self.wsock:
-            fds = '#%d' % self.rsock.fileno()
+            fds = '#{0:d}'.format(self.rsock.fileno())
         else:
-            fds = '#%d,%d' % (self.rsock.fileno(), self.wsock.fileno())
-        return 'SW%s:%s' % (fds, self.peername)
+            fds = '#{0:d},{1:d}'.format(self.rsock.fileno(), self.wsock.fileno())
+        return 'SW{0!s}:{1!s}'.format(fds, self.peername)
 
     def seterr(self, e):
         if not self.exc:
@@ -139,13 +139,13 @@ class SockWrapper:
         if not self.connect_to:
             return  # already connected
         self.rsock.setblocking(False)
-        debug3('%r: trying connect to %r\n' % (self, self.connect_to))
+        debug3('{0!r}: trying connect to {1!r}\n'.format(self, self.connect_to))
         try:
             self.rsock.connect(self.connect_to)
             # connected successfully (Linux)
             self.connect_to = None
         except socket.error as e:
-            debug3('%r: connect result: %s\n' % (self, e))
+            debug3('{0!r}: connect result: {1!s}\n'.format(self, e))
             if e.args[0] == errno.EINVAL:
                 # this is what happens when you call connect() on a socket
                 # that is now connected but returned EINPROGRESS last time,
@@ -155,7 +155,7 @@ class SockWrapper:
                 realerr = self.rsock.getsockopt(socket.SOL_SOCKET,
                                                 socket.SO_ERROR)
                 e = socket.error(realerr, os.strerror(realerr))
-                debug3('%r: fixed connect result: %s\n' % (self, e))
+                debug3('{0!r}: fixed connect result: {1!s}\n'.format(self, e))
             if e.args[0] in [errno.EINPROGRESS, errno.EALREADY]:
                 pass  # not connected yet
             elif e.args[0] == 0:
@@ -181,18 +181,18 @@ class SockWrapper:
 
     def noread(self):
         if not self.shut_read:
-            debug2('%r: done reading\n' % self)
+            debug2('{0!r}: done reading\n'.format(self))
             self.shut_read = True
             # self.rsock.shutdown(SHUT_RD)  # doesn't do anything anyway
 
     def nowrite(self):
         if not self.shut_write:
-            debug2('%r: done writing\n' % self)
+            debug2('{0!r}: done writing\n'.format(self))
             self.shut_write = True
             try:
                 self.wsock.shutdown(SHUT_WR)
             except socket.error as e:
-                self.seterr('nowrite: %s' % e)
+                self.seterr('nowrite: {0!s}'.format(e))
 
     def too_full(self):
         return False  # fullness is determined by the socket's select() state
@@ -205,12 +205,12 @@ class SockWrapper:
             return _nb_clean(os.write, self.wsock.fileno(), buf)
         except OSError as e:
             if e.errno == errno.EPIPE:
-                debug1('%r: uwrite: got EPIPE\n' % self)
+                debug1('{0!r}: uwrite: got EPIPE\n'.format(self))
                 self.nowrite()
                 return 0
             else:
                 # unexpected error... stream is dead
-                self.seterr('uwrite: %s' % e)
+                self.seterr('uwrite: {0!s}'.format(e))
                 return 0
 
     def write(self, buf):
@@ -226,7 +226,7 @@ class SockWrapper:
         try:
             return _nb_clean(os.read, self.rsock.fileno(), 65536)
         except OSError as e:
-            self.seterr('uread: %s' % e)
+            self.seterr('uread: {0!s}'.format(e))
             return b''  # unexpected error... we'll call it EOF
 
     def fill(self):
@@ -261,12 +261,12 @@ class Handler:
             _add(r, i)
 
     def callback(self, sock):
-        log('--no callback defined-- %r\n' % self)
+        log('--no callback defined-- {0!r}\n'.format(self))
         (r, w, x) = select.select(self.socks, [], [], 0)
         for s in r:
             v = s.recv(4096)
             if not v:
-                log('--closed-- %r\n' % self)
+                log('--closed-- {0!r}\n'.format(self))
                 self.socks = []
                 self.ok = False
 
@@ -370,14 +370,12 @@ class Mux(Handler):
         assert len(data) <= 65535
         p = struct.pack('!ccHHH', b'S', b'S', channel, cmd, len(data)) + data
         self.outbuf.append(p)
-        debug2(' > channel=%d cmd=%s len=%d (fullness=%d)\n'
-               % (channel, cmd_to_name.get(cmd, hex(cmd)),
+        debug2(' > channel={0:d} cmd={1!s} len={2:d} (fullness={3:d})\n'.format(channel, cmd_to_name.get(cmd, hex(cmd)),
                   len(data), self.fullness))
         self.fullness += len(data)
 
     def got_packet(self, channel, cmd, data):
-        debug2('<  channel=%d cmd=%s len=%d\n'
-               % (channel, cmd_to_name.get(cmd, hex(cmd)), len(data)))
+        debug2('<  channel={0:d} cmd={1!s} len={2:d}\n'.format(channel, cmd_to_name.get(cmd, hex(cmd)), len(data)))
         if cmd == CMD_PING:
             self.send(0, CMD_PONG, data)
         elif cmd == CMD_PONG:
@@ -416,8 +414,7 @@ class Mux(Handler):
         else:
             callback = self.channels.get(channel)
             if not callback:
-                log('warning: closed channel %d got cmd=%s len=%d\n'
-                    % (channel, cmd_to_name.get(cmd, hex(cmd)), len(data)))
+                log('warning: closed channel {0:d} got cmd={1!s} len={2:d}\n'.format(channel, cmd_to_name.get(cmd, hex(cmd)), len(data)))
             else:
                 callback(cmd, data)
 
@@ -425,7 +422,7 @@ class Mux(Handler):
         self.wsock.setblocking(False)
         if self.outbuf and self.outbuf[0]:
             wrote = _nb_clean(os.write, self.wsock.fileno(), self.outbuf[0])
-            debug2('mux wrote: %r/%d\n' % (wrote, len(self.outbuf[0])))
+            debug2('mux wrote: {0!r}/{1:d}\n'.format(wrote, len(self.outbuf[0])))
             if wrote:
                 self.outbuf[0] = self.outbuf[0][wrote:]
         while self.outbuf and not self.outbuf[0]:
@@ -436,7 +433,7 @@ class Mux(Handler):
         try:
             b = _nb_clean(os.read, self.rsock.fileno(), 32768)
         except OSError as e:
-            raise Fatal('other end: %r' % e)
+            raise Fatal('other end: {0!r}'.format(e))
         # log('<<< %r\n' % b)
         if b == b'':  # EOF
             self.ok = False
@@ -483,32 +480,32 @@ class MuxWrapper(SockWrapper):
         self.channel = channel
         self.mux.channels[channel] = self.got_packet
         self.socks = []
-        debug2('new channel: %d\n' % channel)
+        debug2('new channel: {0:d}\n'.format(channel))
 
     def __del__(self):
         self.nowrite()
         SockWrapper.__del__(self)
 
     def __repr__(self):
-        return 'SW%r:Mux#%d' % (self.peername, self.channel)
+        return 'SW{0!r}:Mux#{1:d}'.format(self.peername, self.channel)
 
     def noread(self):
         if not self.shut_read:
-            debug2('%r: done reading\n' % self)
+            debug2('{0!r}: done reading\n'.format(self))
             self.shut_read = True
             self.mux.send(self.channel, CMD_TCP_STOP_SENDING, b'')
             self.maybe_close()
 
     def nowrite(self):
         if not self.shut_write:
-            debug2('%r: done writing\n' % self)
+            debug2('{0!r}: done writing\n'.format(self))
             self.shut_write = True
             self.mux.send(self.channel, CMD_TCP_EOF, b'')
             self.maybe_close()
 
     def maybe_close(self):
         if self.shut_read and self.shut_write:
-            debug2('%r: closing connection\n' % self)
+            debug2('{0!r}: closing connection\n'.format(self))
             # remove the mux's reference to us.  The python garbage collector
             # will then be able to reap our object.
             self.mux.channels[self.channel] = None
@@ -538,17 +535,16 @@ class MuxWrapper(SockWrapper):
         elif cmd == CMD_TCP_DATA:
             self.buf.append(data)
         else:
-            raise Exception('unknown command %d (%d bytes)'
-                            % (cmd, len(data)))
+            raise Exception('unknown command {0:d} ({1:d} bytes)'.format(cmd, len(data)))
 
 
 def connect_dst(family, ip, port):
-    debug2('Connecting to %s:%d\n' % (ip, port))
+    debug2('Connecting to {0!s}:{1:d}\n'.format(ip, port))
     outsock = socket.socket(family)
     outsock.setsockopt(socket.SOL_IP, socket.IP_TTL, 42)
     return SockWrapper(outsock, outsock,
                        connect_to=(ip, port),
-                       peername = '%s:%d' % (ip, port))
+                       peername = '{0!s}:{1:d}'.format(ip, port))
 
 
 def runonce(handlers, mux):
@@ -561,12 +557,10 @@ def runonce(handlers, mux):
 
     for s in handlers:
         s.pre_select(r, w, x)
-    debug2('Waiting: %d r=%r w=%r x=%r (fullness=%d/%d)\n'
-           % (len(handlers), _fds(r), _fds(w), _fds(x),
+    debug2('Waiting: {0:d} r={1!r} w={2!r} x={3!r} (fullness={4:d}/{5:d})\n'.format(len(handlers), _fds(r), _fds(w), _fds(x),
                mux.fullness, mux.too_full))
     (r, w, x) = select.select(r, w, x)
-    debug2('  Ready: %d r=%r w=%r x=%r\n'
-           % (len(handlers), _fds(r), _fds(w), _fds(x)))
+    debug2('  Ready: {0:d} r={1!r} w={2!r} x={3!r}\n'.format(len(handlers), _fds(r), _fds(w), _fds(x)))
     ready = r + w + x
     did = {}
     for h in handlers:
@@ -576,4 +570,4 @@ def runonce(handlers, mux):
                 did[s] = 1
     for s in ready:
         if s not in did:
-            raise Fatal('socket %r was not used by any handler' % s)
+            raise Fatal('socket {0!r} was not used by any handler'.format(s))

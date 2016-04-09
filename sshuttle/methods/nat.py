@@ -15,8 +15,7 @@ class Method(BaseMethod):
         # only ipv4 supported with NAT
         if family != socket.AF_INET:
             raise Exception(
-                'Address family "%s" unsupported by nat method_name'
-                % family_to_string(family))
+                'Address family "{0!s}" unsupported by nat method_name'.format(family_to_string(family)))
         if udp:
             raise Exception("UDP not supported by nat method_name")
 
@@ -28,7 +27,7 @@ class Method(BaseMethod):
         def _ipt_ttl(*args):
             return ipt_ttl(family, table, *args)
 
-        chain = 'sshuttle-%s' % port
+        chain = 'sshuttle-{0!s}'.format(port)
 
         # basic cleanup/setup of chains
         self.restore_firewall(port, family, udp)
@@ -47,17 +46,17 @@ class Method(BaseMethod):
                 in sorted(subnets, key=lambda s: s[1], reverse=True):
             if sexclude:
                 _ipt('-A', chain, '-j', 'RETURN',
-                     '--dest', '%s/%s' % (snet, swidth),
+                     '--dest', '{0!s}/{1!s}'.format(snet, swidth),
                      '-p', 'tcp')
             else:
                 _ipt_ttl('-A', chain, '-j', 'REDIRECT',
-                         '--dest', '%s/%s' % (snet, swidth),
+                         '--dest', '{0!s}/{1!s}'.format(snet, swidth),
                          '-p', 'tcp',
                          '--to-ports', str(port))
 
         for f, ip in [i for i in nslist if i[0] == family]:
             _ipt_ttl('-A', chain, '-j', 'REDIRECT',
-                     '--dest', '%s/32' % ip,
+                     '--dest', '{0!s}/32'.format(ip),
                      '-p', 'udp',
                      '--dport', '53',
                      '--to-ports', str(dnsport))
@@ -66,8 +65,7 @@ class Method(BaseMethod):
         # only ipv4 supported with NAT
         if family != socket.AF_INET:
             raise Exception(
-                'Address family "%s" unsupported by nat method_name'
-                % family_to_string(family))
+                'Address family "{0!s}" unsupported by nat method_name'.format(family_to_string(family)))
         if udp:
             raise Exception("UDP not supported by nat method_name")
 
@@ -79,7 +77,7 @@ class Method(BaseMethod):
         def _ipt_ttl(*args):
             return ipt_ttl(family, table, *args)
 
-        chain = 'sshuttle-%s' % port
+        chain = 'sshuttle-{0!s}'.format(port)
 
         # basic cleanup/setup of chains
         if ipt_chain_exists(family, table, chain):

@@ -41,7 +41,7 @@ def _ipstr(ip, width):
     if width >= 32:
         return ip
     else:
-        return "%s/%d" % (ip, width)
+        return "{0!s}/{1:d}".format(ip, width)
 
 
 def _maskbits(netmask):
@@ -75,7 +75,7 @@ def _list_routes():
             (socket.AF_INET, socket.inet_ntoa(struct.pack('!I', ip)), width))
     rv = p.wait()
     if rv != 0:
-        log('WARNING: %r returned %d\n' % (argv, rv))
+        log('WARNING: {0!r} returned {1:d}\n'.format(argv, rv))
         log('WARNING: That prevents --auto-nets from working.\n')
     return routes
 
@@ -105,7 +105,7 @@ def start_hostwatch(seed_hosts):
                 s1.close()
                 rv = hostwatch.hw_main(seed_hosts) or 0
             except Exception:
-                log('%s\n' % _exc_dump())
+                log('{0!s}\n'.format(_exc_dump()))
                 rv = 98
         finally:
             os._exit(rv)
@@ -145,7 +145,7 @@ class DnsProxy(Handler):
 
         self.peers[sock] = peer
 
-        debug2('DNS: sending to %r (try %d)\n' % (peer, self.tries))
+        debug2('DNS: sending to {0!r} (try {1:d})\n'.format(peer, self.tries))
         try:
             sock.send(self.request)
             self.socks.append(sock)
@@ -154,11 +154,11 @@ class DnsProxy(Handler):
                 # might have been spurious; try again.
                 # Note: these errors sometimes are reported by recv(),
                 # and sometimes by send().  We have to catch both.
-                debug2('DNS send to %r: %s\n' % (peer, e))
+                debug2('DNS send to {0!r}: {1!s}\n'.format(peer, e))
                 self.try_send()
                 return
             else:
-                log('DNS send to %r: %s\n' % (peer, e))
+                log('DNS send to {0!r}: {1!s}\n'.format(peer, e))
                 return
 
     def callback(self, sock):
@@ -174,13 +174,13 @@ class DnsProxy(Handler):
                 # might have been spurious; try again.
                 # Note: these errors sometimes are reported by recv(),
                 # and sometimes by send().  We have to catch both.
-                debug2('DNS recv from %r: %s\n' % (peer, e))
+                debug2('DNS recv from {0!r}: {1!s}\n'.format(peer, e))
                 self.try_send()
                 return
             else:
-                log('DNS recv from %r: %s\n' % (peer, e))
+                log('DNS recv from {0!r}: {1!s}\n'.format(peer, e))
                 return
-        debug2('DNS response: %d bytes\n' % len(data))
+        debug2('DNS response: {0:d} bytes\n'.format(len(data)))
         self.mux.send(self.chan, ssnet.CMD_DNS_RESPONSE, data)
         self.ok = False
 
@@ -198,38 +198,37 @@ class UdpProxy(Handler):
             self.sock.setsockopt(socket.SOL_IP, socket.IP_TTL, 42)
 
     def send(self, dstip, data):
-        debug2('UDP: sending to %r port %d\n' % dstip)
+        debug2('UDP: sending to {0!r} port {1:d}\n'.format(*dstip))
         try:
             self.sock.sendto(data, dstip)
         except socket.error as e:
-            log('UDP send to %r port %d: %s\n' % (dstip[0], dstip[1], e))
+            log('UDP send to {0!r} port {1:d}: {2!s}\n'.format(dstip[0], dstip[1], e))
             return
 
     def callback(self, sock):
         try:
             data, peer = sock.recvfrom(4096)
         except socket.error as e:
-            log('UDP recv from %r port %d: %s\n' % (peer[0], peer[1], e))
+            log('UDP recv from {0!r} port {1:d}: {2!s}\n'.format(peer[0], peer[1], e))
             return
-        debug2('UDP response: %d bytes\n' % len(data))
-        hdr = "%s,%r," % (peer[0], peer[1])
+        debug2('UDP response: {0:d} bytes\n'.format(len(data)))
+        hdr = "{0!s},{1!r},".format(peer[0], peer[1])
         self.mux.send(self.chan, ssnet.CMD_UDP_DATA, hdr + data)
 
 
 def main(latency_control):
-    debug1('Starting server with Python version %s\n'
-           % platform.python_version())
+    debug1('Starting server with Python version {0!s}\n'.format(platform.python_version()))
 
     if helpers.verbose >= 1:
         helpers.logprefix = ' s: '
     else:
         helpers.logprefix = 'server: '
-    debug1('latency control setting = %r\n' % latency_control)
+    debug1('latency control setting = {0!r}\n'.format(latency_control))
 
     routes = list(list_routes())
     debug1('available routes:\n')
     for r in routes:
-        debug1('  %d/%s/%d\n' % r)
+        debug1('  {0:d}/{1!s}/{2:d}\n'.format(*r))
 
     # synchronization header
     sys.stdout.write('\0\0SSHUTTLE0001')
@@ -243,7 +242,7 @@ def main(latency_control):
     handlers.append(mux)
     routepkt = b''
     for r in routes:
-        routepkt += b'%d,%s,%d\n' % (r[0], r[1].encode("ASCII"), r[2])
+        routepkt += b'{0:d},{1!s},{2:d}\n'.format(r[0], r[1].encode("ASCII"), r[2])
     mux.send(0, ssnet.CMD_ROUTES, routepkt)
 
     hw = Hostwatch()
@@ -282,7 +281,7 @@ def main(latency_control):
     dnshandlers = {}
 
     def dns_req(channel, data):
-        debug2('Incoming DNS request channel=%d.\n' % channel)
+        debug2('Incoming DNS request channel={0:d}.\n'.format(channel))
         h = DnsProxy(mux, channel, data)
         handlers.append(h)
         dnshandlers[channel] = h
@@ -291,11 +290,11 @@ def main(latency_control):
     udphandlers = {}
 
     def udp_req(channel, cmd, data):
-        debug2('Incoming UDP request channel=%d, cmd=%d\n' % (channel, cmd))
+        debug2('Incoming UDP request channel={0:d}, cmd={1:d}\n'.format(channel, cmd))
         if cmd == ssnet.CMD_UDP_DATA:
             (dstip, dstport, data) = data.split(",", 2)
             dstport = int(dstport)
-            debug2('is incoming UDP data. %r %d.\n' % (dstip, dstport))
+            debug2('is incoming UDP data. {0!r} {1:d}.\n'.format(dstip, dstport))
             h = udphandlers[channel]
             h.send((dstip, dstport), data)
         elif cmd == ssnet.CMD_UDP_CLOSE:
@@ -309,7 +308,7 @@ def main(latency_control):
         family = int(data)
         mux.channels[channel] = lambda cmd, data: udp_req(channel, cmd, data)
         if channel in udphandlers:
-            raise Fatal('UDP connection channel %d already open' % channel)
+            raise Fatal('UDP connection channel {0:d} already open'.format(channel))
         else:
             h = UdpProxy(mux, channel, family)
             handlers.append(h)
@@ -322,7 +321,7 @@ def main(latency_control):
             (rpid, rv) = os.waitpid(hw.pid, os.WNOHANG)
             if rpid:
                 raise Fatal(
-                    'hostwatch exited unexpectedly: code 0x%04x\n' % rv)
+                    'hostwatch exited unexpectedly: code 0x{0:04x}\n'.format(rv))
 
         ssnet.runonce(handlers, mux)
         if latency_control:
@@ -333,7 +332,7 @@ def main(latency_control):
             remove = []
             for channel, h in dnshandlers.items():
                 if h.timeout < now or not h.ok:
-                    debug3('expiring dnsreqs channel=%d\n' % channel)
+                    debug3('expiring dnsreqs channel={0:d}\n'.format(channel))
                     remove.append(channel)
                     h.ok = False
             for channel in remove:
@@ -342,7 +341,7 @@ def main(latency_control):
             remove = []
             for channel, h in udphandlers.items():
                 if not h.ok:
-                    debug3('expiring UDP channel=%d\n' % channel)
+                    debug3('expiring UDP channel={0:d}\n'.format(channel))
                     remove.append(channel)
                     h.ok = False
             for channel in remove:

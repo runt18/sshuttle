@@ -7,7 +7,7 @@ def nonfatal(func, *args):
     try:
         func(*args)
     except Fatal as e:
-        log('error: %s\n' % e)
+        log('error: {0!s}\n'.format(e))
 
 
 def ipt_chain_exists(family, table, name):
@@ -16,15 +16,15 @@ def ipt_chain_exists(family, table, name):
     elif family == socket.AF_INET:
         cmd = 'iptables'
     else:
-        raise Exception('Unsupported family "%s"' % family_to_string(family))
+        raise Exception('Unsupported family "{0!s}"'.format(family_to_string(family)))
     argv = [cmd, '-t', table, '-nL']
     p = ssubprocess.Popen(argv, stdout=ssubprocess.PIPE)
     for line in p.stdout:
-        if line.startswith(b'Chain %s ' % name.encode("ASCII")):
+        if line.startswith(b'Chain {0!s} '.format(name.encode("ASCII"))):
             return True
     rv = p.wait()
     if rv:
-        raise Fatal('%r returned %d' % (argv, rv))
+        raise Fatal('{0!r} returned {1:d}'.format(argv, rv))
 
 
 def ipt(family, table, *args):
@@ -33,11 +33,11 @@ def ipt(family, table, *args):
     elif family == socket.AF_INET:
         argv = ['iptables', '-t', table] + list(args)
     else:
-        raise Exception('Unsupported family "%s"' % family_to_string(family))
-    debug1('>> %s\n' % ' '.join(argv))
+        raise Exception('Unsupported family "{0!s}"'.format(family_to_string(family)))
+    debug1('>> {0!s}\n'.format(' '.join(argv)))
     rv = ssubprocess.call(argv)
     if rv:
-        raise Fatal('%r returned %d' % (argv, rv))
+        raise Fatal('{0!r} returned {1:d}'.format(argv, rv))
 
 
 _no_ttl_module = False

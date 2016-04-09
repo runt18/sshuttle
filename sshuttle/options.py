@@ -110,14 +110,14 @@ class Options:
             l = lines.pop()
             if l == '--':
                 break
-            out.append('%s: %s\n' % (first_syn and 'usage' or '   or', l))
+            out.append('{0!s}: {1!s}\n'.format(first_syn and 'usage' or '   or', l))
             first_syn = False
         out.append('\n')
         last_was_option = False
         while lines:
             l = lines.pop()
             if l.startswith(' '):
-                out.append('%s%s\n' % (last_was_option and '\n' or '',
+                out.append('{0!s}{1!s}\n'.format(last_was_option and '\n' or '',
                                        l.lstrip()))
                 last_was_option = False
             elif l:
@@ -152,7 +152,7 @@ class Options:
                 flags_nice = ', '.join(flagl_nice)
                 if has_parm:
                     flags_nice += ' ...'
-                prefix = '    %-20s  ' % flags_nice
+                prefix = '    {0:<20!s}  '.format(flags_nice)
                 argtext = '\n'.join(textwrap.wrap(extra, width=_tty_width(),
                                                   initial_indent=prefix,
                                                   subsequent_indent=' ' * 28))
@@ -172,7 +172,7 @@ class Options:
 
     def fatal(self, s):
         """Print an error message to stderr and abort with usage string."""
-        msg = 'error: %s\n' % s
+        msg = 'error: {0!s}\n'.format(s)
         sys.stderr.write(msg)
         return self.usage(msg)
 
