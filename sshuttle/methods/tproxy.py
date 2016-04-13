@@ -44,7 +44,7 @@ if recvmsg == "python":
                     start = 4
                     length = 4
                 else:
-                    raise Fatal("Unsupported socket type '%s'" % family)
+                    raise Fatal("Unsupported socket type '{0!s}'".format(family))
                 ip = socket.inet_ntop(family, cmsg_data[start:start + length])
                 dstip = (ip, port)
                 break
@@ -55,7 +55,7 @@ if recvmsg == "python":
                     start = 8
                     length = 16
                 else:
-                    raise Fatal("Unsupported socket type '%s'" % family)
+                    raise Fatal("Unsupported socket type '{0!s}'".format(family))
                 ip = socket.inet_ntop(family, cmsg_data[start:start + length])
                 dstip = (ip, port)
                 break
@@ -75,7 +75,7 @@ elif recvmsg == "socket_ext":
                     start = 4
                     length = 4
                 else:
-                    raise Fatal("Unsupported socket type '%s'" % family)
+                    raise Fatal("Unsupported socket type '{0!s}'".format(family))
                 ip = socket.inet_ntop(
                     family, a.cmsg_data[start:start + length])
                 dstip = (ip, port)
@@ -87,7 +87,7 @@ elif recvmsg == "socket_ext":
                     start = 8
                     length = 16
                 else:
-                    raise Fatal("Unsupported socket type '%s'" % family)
+                    raise Fatal("Unsupported socket type '{0!s}'".format(family))
                 ip = socket.inet_ntop(
                     family, a.cmsg_data[start:start + length])
                 dstip = (ip, port)
@@ -152,8 +152,7 @@ class Method(BaseMethod):
     def setup_firewall(self, port, dnsport, nslist, family, subnets, udp):
         if family not in [socket.AF_INET, socket.AF_INET6]:
             raise Exception(
-                'Address family "%s" unsupported by tproxy method'
-                % family_to_string(family))
+                'Address family "{0!s}" unsupported by tproxy method'.format(family_to_string(family)))
 
         table = "mangle"
 
@@ -163,9 +162,9 @@ class Method(BaseMethod):
         def _ipt_ttl(*args):
             return ipt_ttl(family, table, *args)
 
-        mark_chain = 'sshuttle-m-%s' % port
-        tproxy_chain = 'sshuttle-t-%s' % port
-        divert_chain = 'sshuttle-d-%s' % port
+        mark_chain = 'sshuttle-m-{0!s}'.format(port)
+        tproxy_chain = 'sshuttle-t-{0!s}'.format(port)
+        divert_chain = 'sshuttle-d-{0!s}'.format(port)
 
         # basic cleanup/setup of chains
         self.restore_firewall(port, family, udp)
@@ -189,11 +188,11 @@ class Method(BaseMethod):
 
         for f, ip in [i for i in nslist if i[0] == family]:
             _ipt('-A', mark_chain, '-j', 'MARK', '--set-mark', '1',
-                 '--dest', '%s/32' % ip,
+                 '--dest', '{0!s}/32'.format(ip),
                  '-m', 'udp', '-p', 'udp', '--dport', '53')
             _ipt('-A', tproxy_chain, '-j', 'TPROXY',
                  '--tproxy-mark', '0x1/0x1',
-                 '--dest', '%s/32' % ip,
+                 '--dest', '{0!s}/32'.format(ip),
                  '-m', 'udp', '-p', 'udp', '--dport', '53',
                  '--on-port', str(dnsport))
 
@@ -201,44 +200,43 @@ class Method(BaseMethod):
                 in sorted(subnets, key=lambda s: s[1], reverse=True):
             if sexclude:
                 _ipt('-A', mark_chain, '-j', 'RETURN',
-                     '--dest', '%s/%s' % (snet, swidth),
+                     '--dest', '{0!s}/{1!s}'.format(snet, swidth),
                      '-m', 'tcp', '-p', 'tcp')
                 _ipt('-A', tproxy_chain, '-j', 'RETURN',
-                     '--dest', '%s/%s' % (snet, swidth),
+                     '--dest', '{0!s}/{1!s}'.format(snet, swidth),
                      '-m', 'tcp', '-p', 'tcp')
             else:
                 _ipt('-A', mark_chain, '-j', 'MARK', '--set-mark', '1',
-                     '--dest', '%s/%s' % (snet, swidth),
+                     '--dest', '{0!s}/{1!s}'.format(snet, swidth),
                      '-m', 'tcp', '-p', 'tcp')
                 _ipt('-A', tproxy_chain, '-j', 'TPROXY',
                      '--tproxy-mark', '0x1/0x1',
-                     '--dest', '%s/%s' % (snet, swidth),
+                     '--dest', '{0!s}/{1!s}'.format(snet, swidth),
                      '-m', 'tcp', '-p', 'tcp',
                      '--on-port', str(port))
 
             if udp:
                 if sexclude:
                     _ipt('-A', mark_chain, '-j', 'RETURN',
-                         '--dest', '%s/%s' % (snet, swidth),
+                         '--dest', '{0!s}/{1!s}'.format(snet, swidth),
                          '-m', 'udp', '-p', 'udp')
                     _ipt('-A', tproxy_chain, '-j', 'RETURN',
-                         '--dest', '%s/%s' % (snet, swidth),
+                         '--dest', '{0!s}/{1!s}'.format(snet, swidth),
                          '-m', 'udp', '-p', 'udp')
                 else:
                     _ipt('-A', mark_chain, '-j', 'MARK', '--set-mark', '1',
-                         '--dest', '%s/%s' % (snet, swidth),
+                         '--dest', '{0!s}/{1!s}'.format(snet, swidth),
                          '-m', 'udp', '-p', 'udp')
                     _ipt('-A', tproxy_chain, '-j', 'TPROXY',
                          '--tproxy-mark', '0x1/0x1',
-                         '--dest', '%s/%s' % (snet, swidth),
+                         '--dest', '{0!s}/{1!s}'.format(snet, swidth),
                          '-m', 'udp', '-p', 'udp',
                          '--on-port', str(port))
 
     def restore_firewall(self, port, family, udp):
         if family not in [socket.AF_INET, socket.AF_INET6]:
             raise Exception(
-                'Address family "%s" unsupported by tproxy method'
-                % family_to_string(family))
+                'Address family "{0!s}" unsupported by tproxy method'.format(family_to_string(family)))
 
         table = "mangle"
 
@@ -248,9 +246,9 @@ class Method(BaseMethod):
         def _ipt_ttl(*args):
             return ipt_ttl(family, table, *args)
 
-        mark_chain = 'sshuttle-m-%s' % port
-        tproxy_chain = 'sshuttle-t-%s' % port
-        divert_chain = 'sshuttle-d-%s' % port
+        mark_chain = 'sshuttle-m-{0!s}'.format(port)
+        tproxy_chain = 'sshuttle-t-{0!s}'.format(port)
+        divert_chain = 'sshuttle-d-{0!s}'.format(port)
 
         # basic cleanup/setup of chains
         if ipt_chain_exists(family, table, mark_chain):

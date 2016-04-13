@@ -23,7 +23,7 @@ queue = {}
 try:
     null = open('/dev/null', 'wb')
 except IOError as e:
-    log('warning: %s\n' % e)
+    log('warning: {0!s}\n'.format(e))
     null = os.popen("sh -c 'while read x; do :; done'", 'wb', 4096)
 
 
@@ -32,11 +32,11 @@ def _is_ip(s):
 
 
 def write_host_cache():
-    tmpname = '%s.%d.tmp' % (CACHEFILE, os.getpid())
+    tmpname = '{0!s}.{1:d}.tmp'.format(CACHEFILE, os.getpid())
     try:
         f = open(tmpname, 'wb')
         for name, ip in sorted(hostnames.items()):
-            f.write(('%s,%s\n' % (name, ip)).encode("ASCII"))
+            f.write(('{0!s},{1!s}\n'.format(name, ip)).encode("ASCII"))
         f.close()
         os.chmod(tmpname, 0o600)
         os.rename(tmpname, CACHEFILE)
@@ -74,8 +74,8 @@ def found_host(hostname, ip):
     oldip = hostnames.get(hostname)
     if oldip != ip:
         hostnames[hostname] = ip
-        debug1('Found: %s: %s\n' % (hostname, ip))
-        sys.stdout.write('%s,%s\n' % (hostname, ip))
+        debug1('Found: {0!s}: {1!s}\n'.format(hostname, ip))
+        sys.stdout.write('{0!s},{1!s}\n'.format(hostname, ip))
         write_host_cache()
 
 
@@ -89,17 +89,17 @@ def _check_etc_hosts():
         ip = words[0]
         names = words[1:]
         if _is_ip(ip):
-            debug3('<    %s %r\n' % (ip, names))
+            debug3('<    {0!s} {1!r}\n'.format(ip, names))
             for n in names:
                 check_host(n)
                 found_host(n, ip)
 
 
 def _check_revdns(ip):
-    debug2(' > rev: %s\n' % ip)
+    debug2(' > rev: {0!s}\n'.format(ip))
     try:
         r = socket.gethostbyaddr(ip)
-        debug3('<    %s\n' % r[0])
+        debug3('<    {0!s}\n'.format(r[0]))
         check_host(r[0])
         found_host(r[0], ip)
     except socket.herror:
@@ -107,10 +107,10 @@ def _check_revdns(ip):
 
 
 def _check_dns(hostname):
-    debug2(' > dns: %s\n' % hostname)
+    debug2(' > dns: {0!s}\n'.format(hostname))
     try:
         ip = socket.gethostbyname(hostname)
-        debug3('<    %s\n' % ip)
+        debug3('<    {0!s}\n'.format(ip))
         check_host(ip)
         found_host(hostname, ip)
     except socket.gaierror:
@@ -125,11 +125,11 @@ def _check_netstat():
         content = p.stdout.read().decode("ASCII")
         p.wait()
     except OSError as e:
-        log('%r failed: %r\n' % (argv, e))
+        log('{0!r} failed: {1!r}\n'.format(argv, e))
         return
 
     for ip in re.findall(r'\d+\.\d+\.\d+\.\d+', content):
-        debug3('<    %s\n' % ip)
+        debug3('<    {0!s}\n'.format(ip))
         check_host(ip)
 
 
@@ -139,13 +139,13 @@ def _check_smb(hostname):
     if not _smb_ok:
         return
     argv = ['smbclient', '-U', '%', '-L', hostname]
-    debug2(' > smb: %s\n' % hostname)
+    debug2(' > smb: {0!s}\n'.format(hostname))
     try:
         p = ssubprocess.Popen(argv, stdout=ssubprocess.PIPE, stderr=null)
         lines = p.stdout.readlines()
         p.wait()
     except OSError as e:
-        log('%r failed: %r\n' % (argv, e))
+        log('{0!r} failed: {1!r}\n'.format(argv, e))
         _smb_ok = False
         return
 
@@ -168,7 +168,7 @@ def _check_smb(hostname):
             break
         words = line.split()
         hostname = words[0].lower()
-        debug3('<    %s\n' % hostname)
+        debug3('<    {0!s}\n'.format(hostname))
         check_host(hostname)
 
     # workgroup list section:
@@ -182,7 +182,7 @@ def _check_smb(hostname):
             break
         words = line.split()
         (workgroup, hostname) = (words[0].lower(), words[1].lower())
-        debug3('<    group(%s) -> %s\n' % (workgroup, hostname))
+        debug3('<    group({0!s}) -> {1!s}\n'.format(workgroup, hostname))
         check_host(hostname)
         check_workgroup(workgroup)
 
@@ -196,24 +196,24 @@ def _check_nmb(hostname, is_workgroup, is_master):
     if not _nmb_ok:
         return
     argv = ['nmblookup'] + ['-M'] * is_master + ['--', hostname]
-    debug2(' > n%d%d: %s\n' % (is_workgroup, is_master, hostname))
+    debug2(' > n{0:d}{1:d}: {2!s}\n'.format(is_workgroup, is_master, hostname))
     try:
         p = ssubprocess.Popen(argv, stdout=ssubprocess.PIPE, stderr=null)
         lines = p.stdout.readlines()
         rv = p.wait()
     except OSError as e:
-        log('%r failed: %r\n' % (argv, e))
+        log('{0!r} failed: {1!r}\n'.format(argv, e))
         _nmb_ok = False
         return
     if rv:
-        log('%r returned %d\n' % (argv, rv))
+        log('{0!r} returned {1:d}\n'.format(argv, rv))
         return
     for line in lines:
         m = re.match(r'(\d+\.\d+\.\d+\.\d+) (\w+)<\w\w>\n', line)
         if m:
             g = m.groups()
             (ip, name) = (g[0], g[1].lower())
-            debug3('<    %s -> %s\n' % (name, ip))
+            debug3('<    {0!s} -> {1!s}\n'.format(name, ip))
             if is_workgroup:
                 _enqueue(_check_smb, ip)
             else:
@@ -256,8 +256,7 @@ def hw_main(seed_hosts):
     else:
         helpers.logprefix = 'hostwatch: '
 
-    debug1('Starting hostwatch with Python version %s\n'
-           % platform.python_version())
+    debug1('Starting hostwatch with Python version {0!s}\n'.format(platform.python_version()))
 
     read_host_cache()
 

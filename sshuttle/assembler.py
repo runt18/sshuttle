@@ -10,8 +10,7 @@ while 1:
 
         nbytes = int(stdin.readline())
         if verbosity >= 2:
-            sys.stderr.write('server: assembling %r (%d bytes)\n'
-                             % (name, nbytes))
+            sys.stderr.write('server: assembling {0!r} ({1:d} bytes)\n'.format(name, nbytes))
         content = z.decompress(stdin.read(nbytes))
 
         module = imp.new_module(name)

@@ -49,7 +49,7 @@ def empackage(z, name, data=None):
     content = z.compress(data)
     content += z.flush(zlib.Z_SYNC_FLUSH)
 
-    return b'%s\n%d\n%s' % (name.encode("ASCII"), len(content), content)
+    return b'{0!s}\n{1:d}\n{2!s}'.format(name.encode("ASCII"), len(content), content)
 
 
 def connect(ssh_cmd, rhostport, python, stderr, options):
@@ -78,7 +78,7 @@ def connect(ssh_cmd, rhostport, python, stderr, options):
 
     z = zlib.compressobj(1)
     content = readfile('sshuttle.assembler')
-    optdata = ''.join("%s=%r\n" % (k, v) for (k, v) in list(options.items()))
+    optdata = ''.join("{0!s}={1!r}\n".format(k, v) for (k, v) in list(options.items()))
     optdata = optdata.encode("UTF8")
     content2 = (empackage(z, 'sshuttle') +
                 empackage(z, 'sshuttle.cmdline_options', optdata) +
@@ -90,10 +90,10 @@ def connect(ssh_cmd, rhostport, python, stderr, options):
 
     pyscript = r"""
                 import sys;
-                verbosity=%d;
+                verbosity={0:d};
                 stdin=getattr(sys.stdin,"buffer",sys.stdin);
-                exec(compile(stdin.read(%d), "assembler.py", "exec"))
-                """ % (helpers.verbose or 0, len(content))
+                exec(compile(stdin.read({1:d}), "assembler.py", "exec"))
+                """.format(helpers.verbose or 0, len(content))
     pyscript = re.sub(r'\s+', ' ', pyscript.strip())
 
     if not rhost:
@@ -106,7 +106,7 @@ def connect(ssh_cmd, rhostport, python, stderr, options):
         else:
             sshl = ['ssh']
         if python:
-            pycmd = "'%s' -c '%s'" % (python, pyscript)
+            pycmd = "'{0!s}' -c '{1!s}'".format(python, pyscript)
         else:
             pycmd = ("P=python3.5; $P -V 2>/dev/null || P=python; "
                      "exec \"$P\" -c '%s'") % pyscript
@@ -120,7 +120,7 @@ def connect(ssh_cmd, rhostport, python, stderr, options):
         s2.close()
     s1a, s1b = os.dup(s1.fileno()), os.dup(s1.fileno())
     s1.close()
-    debug2('executing: %r\n' % argv)
+    debug2('executing: {0!r}\n'.format(argv))
     p = ssubprocess.Popen(argv, stdin=s1a, stdout=s1b, preexec_fn=setup,
                           close_fds=True, stderr=stderr)
     os.close(s1a)

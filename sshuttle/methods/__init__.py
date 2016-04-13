@@ -15,7 +15,7 @@ def original_dst(sock):
         (proto, port, a, b, c, d) = struct.unpack('!HHBBBB', sockaddr_in[:8])
         # FIXME: decoding is IPv4 only.
         assert(socket.htons(proto) == socket.AF_INET)
-        ip = '%d.%d.%d.%d' % (a, b, c, d)
+        ip = '{0:d}.{1:d}.{2:d}.{3:d}'.format(a, b, c, d)
         return (ip, port)
     except socket.error as e:
         if e.args[0] == errno.ENOPROTOOPT:
@@ -52,8 +52,7 @@ class BaseMethod(object):
 
     def send_udp(self, sock, srcip, dstip, data):
         if srcip is not None:
-            Fatal("Method %s send_udp does not support setting srcip to %r"
-                  % (self.name, srcip))
+            Fatal("Method {0!s} send_udp does not support setting srcip to {1!r}".format(self.name, srcip))
         sock.sendto(data, dstip)
 
     def setup_tcp_listener(self, tcp_listener):
@@ -67,8 +66,7 @@ class BaseMethod(object):
         for key in ["udp", "dns", "ipv6"]:
             if getattr(features, key) and not getattr(avail, key):
                 raise Fatal(
-                    "Feature %s not supported with method %s.\n" %
-                    (key, self.name))
+                    "Feature {0!s} not supported with method {1!s}.\n".format(key, self.name))
 
     def setup_firewall(self, port, dnsport, nslist, family, subnets, udp):
         raise NotImplementedError()
@@ -83,13 +81,13 @@ class BaseMethod(object):
 def _program_exists(name):
     paths = (os.getenv('PATH') or os.defpath).split(os.pathsep)
     for p in paths:
-        fn = '%s/%s' % (p, name)
+        fn = '{0!s}/{1!s}'.format(p, name)
         if os.path.exists(fn):
             return not os.path.isdir(fn) and os.access(fn, os.X_OK)
 
 
 def get_method(method_name):
-    module = importlib.import_module("sshuttle.methods.%s" % method_name)
+    module = importlib.import_module("sshuttle.methods.{0!s}".format(method_name))
     return module.Method(method_name)
 
 
